@@ -1,0 +1,55 @@
+name: Windows Build
+
+# Qachon ishga tushishi kerak? (Main branchga kod push qilinganda)
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch: # Qo'lda ishga tushirish uchun tugma qo'shadi
+
+jobs:
+  build:
+    name: Build Windows Exe
+    # Windows exe yaratish uchun Windows serverda ishlashi shart
+    runs-on: windows-latest
+
+    steps:
+      # 1. Kodni Githubdan yuklab olish
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. Flutter muhitini o'rnatish
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable' # Eng barqaror versiya
+          architecture: x64
+
+      # 3. Keshni yoqish (Buildni tezlashtirish uchun)
+      - name: Pub Cache
+        uses: actions/cache@v3
+        with:
+          path: ${{ env.PUB_CACHE }}
+          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pub-
+
+      # 4. Dependency'larni yuklash
+      - name: Get Dependencies
+        run: flutter pub get
+
+      # 5. Windows Config (Ehtiyot shart)
+      - name: Enable Windows Support
+        run: flutter config --enable-windows-desktop
+
+      # 6. Build jarayoni (Release versiya)
+      - name: Build Windows App
+        run: flutter build windows --release
+
+      # 7. Tayyor fayllarni zip qilib olish (Artifact)
+      # DIQQAT: Exe ishlashi uchun yonidagi dll fayllar ham kerak.
+      # Shuning uchun butun Release papkasini olamiz.
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: IpyUI-Windows-App
+          path: build/windows/x64/runner/Release

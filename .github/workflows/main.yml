@@ -1,15 +1,14 @@
 name: Windows Build
 
-# Qachon ishga tushishi kerak? (Main branchga kod push qilinganda)
+# Kod main branchga tushganda yoki qo'lda bosilganda ishlaydi
 on:
   push:
     branches: [ "main" ]
-  workflow_dispatch: # Qo'lda ishga tushirish uchun tugma qo'shadi
+  workflow_dispatch:
 
 jobs:
   build:
     name: Build Windows Exe
-    # Windows exe yaratish uchun Windows serverda ishlashi shart
     runs-on: windows-latest
 
     steps:
@@ -21,7 +20,7 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          channel: 'stable' # Eng barqaror versiya
+          channel: 'stable'
           architecture: x64
 
       # 3. Keshni yoqish (Buildni tezlashtirish uchun)
@@ -33,21 +32,26 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pub-
 
-      # 4. Dependency'larni yuklash
+      # 4. Windows Config (Desktop supportni yoqish)
+      - name: Enable Windows Support
+        run: flutter config --enable-windows-desktop
+
+      # 5. Dependency'larni yuklash
       - name: Get Dependencies
         run: flutter pub get
 
-      # 5. Windows Config (Ehtiyot shart)
-      - name: Enable Windows Support
-        run: flutter config --enable-windows-desktop
+      # --- MUHIM QISM: Windows papkasini yaratish ---
+      # Bu buyruq sizda yo'q bo'lgan 'windows' papkasini
+      # va C++ runner fayllarini avtomatik generatsiya qiladi.
+      - name: Create Windows Files
+        run: flutter create --platforms=windows .
+      # ----------------------------------------------
 
       # 6. Build jarayoni (Release versiya)
       - name: Build Windows App
         run: flutter build windows --release
 
       # 7. Tayyor fayllarni zip qilib olish (Artifact)
-      # DIQQAT: Exe ishlashi uchun yonidagi dll fayllar ham kerak.
-      # Shuning uchun butun Release papkasini olamiz.
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
